@@ -86,6 +86,7 @@ List<PickLine> summary(List<Invoice> invoices,List<Product> products) {
 class Warehouse {
   List<Product> products=[];
   List<Invoice> invoices=[];
+  List<Map<String,dynamic>> history=[];
   Map<String,Product> get catalog=>{for(final p in products)codeOf(p.code):p};
   Future<void> load() async {
     final prefs=await SharedPreferences.getInstance();
@@ -94,6 +95,9 @@ class Warehouse {
     final parsed=jsonDecode(raw);
     final list=parsed is List?parsed:parsed['products'] as List;
     products=list.map((e)=>Product.fromJson(Map<String,dynamic>.from(e))).toList();
+    final archived=prefs.getString('batches_v1');
+    if(archived!=null)history=(jsonDecode(archived) as List)
+      .map((e)=>Map<String,dynamic>.from(e as Map)).toList();
     final invoicesRaw=prefs.getString('invoices_v1');
     if(invoicesRaw!=null) {
       invoices=(jsonDecode(invoicesRaw) as List)
@@ -104,7 +108,16 @@ class Warehouse {
     final prefs=await SharedPreferences.getInstance();
     await prefs.setString('products_v1',jsonEncode(products.map((e)=>e.toJson()).toList()));
     await prefs.setString('invoices_v1',jsonEncode(invoices.map((e)=>e.toJson()).toList()));
+    await prefs.setString('batches_v1',jsonEncode(history));
   }
+  void finishBatch(){
+    if(invoices.isEmpty)return;
+    history.insert(0,{'finishedAt':DateTime.now().toIso8601String(),
+      'invoices':invoices.map((e)=>e.toJson()).toList()});
+    invoices=[];
+  }
+  List<Invoice> batchInvoices(Map<String,dynamic> batch)=>(batch['invoices'] as List)
+    .map((e)=>Invoice.fromJson(Map<String,dynamic>.from(e as Map))).toList();
   bool duplicate(String number,String? excludeId)=>number.trim().isNotEmpty &&
     invoices.any((e)=>e.id!=excludeId &&
       e.number.trim().toLowerCase()==number.trim().toLowerCase());
