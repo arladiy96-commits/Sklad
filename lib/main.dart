@@ -86,9 +86,13 @@ class _WarehouseHomeState extends State<WarehouseHome> {
       ScanData scanned;
       try{
         scanned=await Scanner().scan(path,store.catalog.keys.toSet());
-      }catch(e){
+      }catch(e,stack){
+        // An Android ML Kit exception can contain thousands of characters.
+        // Keep the UI usable and leave the detailed exception in device logs.
+        debugPrint('Sklad OCR failure: $e');
+        debugPrintStack(stackTrace: stack);
         scanned=ScanData('',[]);
-        if(mounted)message('Распознавание не удалось. Введи позиции вручную: $e');
+        if(mounted)message('Ошибка распознавания. Фото сохранено — можно ввести позиции вручную.');
       }
       if(!mounted)return;
       setState(()=>loading=false);
