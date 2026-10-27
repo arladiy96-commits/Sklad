@@ -481,7 +481,9 @@ class _InvoiceEditorState extends State<InvoiceEditor> {
     final catalog=widget.data.catalog;
     final options=widget.data.products.where((p)=>p.active).toList()
       ..sort((a,b)=>a.name.compareTo(b.name));
-    final total=items.fold<int>(0,(a,e)=>a+(e.bags(catalog)?.round()??0));
+    final validItems=items.where((item)=>item.problem(catalog)==null).toList();
+    final total=validItems.fold<int>(0,(a,e)=>a+(e.bags(catalog)?.round()??0));
+    final unresolved=items.length-validItems.length;
     return Scaffold(
       appBar:AppBar(title:Text(widget.previous==null?'Новая накладная':'Редактировать накладную')),
       bottomNavigationBar:SafeArea(minimum:const EdgeInsets.all(12),
@@ -505,8 +507,12 @@ class _InvoiceEditorState extends State<InvoiceEditor> {
         Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[
           Text('Позиции: '+items.length.toString(),style:const TextStyle(
             fontSize:17,fontWeight:FontWeight.bold)),
-          Text('Мешков: '+total.toString(),style:const TextStyle(fontSize:16,
-            fontWeight:FontWeight.bold,color:navy)),
+          Column(crossAxisAlignment:CrossAxisAlignment.end,children:[
+            Text('Мешков: '+total.toString(),style:const TextStyle(fontSize:16,
+              fontWeight:FontWeight.bold,color:navy)),
+            if(unresolved>0)Text('Уточнить строк: '+unresolved.toString(),
+              style:const TextStyle(fontSize:12,color:Colors.deepOrange)),
+          ]),
         ]),
         if(widget.scan!=null && widget.scan!.items.isEmpty)
           const Card(child:Padding(padding:EdgeInsets.all(12),
@@ -558,7 +564,8 @@ class _InvoiceEditorState extends State<InvoiceEditor> {
           const SizedBox(width:8),
           Expanded(child:InputDecorator(
             decoration:const InputDecoration(labelText:'Мешков'),
-            child:Text(item.bags(catalog)==null?'—':qty(item.bags(catalog)!),
+            child:Text(error!=null || item.bags(catalog)==null
+                ?'—':qty(item.bags(catalog)!),
               style:const TextStyle(fontWeight:FontWeight.bold,fontSize:17)))),
         ]),
         const SizedBox(height:10),
@@ -577,8 +584,8 @@ class _InvoiceEditorState extends State<InvoiceEditor> {
           child:Text(error,style:const TextStyle(color:Colors.deepOrange,
             fontWeight:FontWeight.w600,fontSize:12))),
         if(item.raw.isNotEmpty)Padding(padding:const EdgeInsets.only(top:6),
-          child:Text('OCR: '+item.raw,style:const TextStyle(fontSize:10,
-            color:Colors.black45))),
+          child:Text(item.raw,style:const TextStyle(fontSize:11,
+            color:Colors.black54))),
       ]),
     ));
   }
