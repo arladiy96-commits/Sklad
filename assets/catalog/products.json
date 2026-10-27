@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "codePrefixNote": "Normalize Latin H and Cyrillic Н to Latin H when matching document codes. Confirm which alphabet the printer uses before production.",
+  "products": [
+    {
+      "code": "H00001955",
+      "name": "Мука Тамерлан, 1 сорт, 25 кг",
+      "bagWeightKg": 25,
+      "active": true,
+      "confirmedByWarehouse": false
+    },
+    {
+      "code": "H00001950",
+      "name": "Мука Тамерлан, высший сорт, 25 кг",
+      "bagWeightKg": 25,
+      "active": true,
+      "confirmedByWarehouse": false
+    },
+    {
+      "code": "H00001952",
+      "name": "Мука Тамерлан, высший сорт, 10 кг",
+      "bagWeightKg": 10,
+      "active": true,
+      "confirmedByWarehouse": false
+    },
+    {
+      "code": "H00001957",
+      "name": "Мука Тамерлан, 1 сорт, 5 кг",
+      "bagWeightKg": 5,
+      "active": true,
+      "confirmedByWarehouse": false
+    },
+    {
+      "code": "H00001953",
+      "name": "Мука Тамерлан, высший сорт, 5 кг",
+      "bagWeightKg": 5,
+      "active": true,
+      "confirmedByWarehouse": false
+    },
+    {
+      "code": "H00003422",
+      "name": "Мука Беляевская, высший сорт, 5 кг",
+      "bagWeightKg": 5,
+      "active": true,
+      "confirmedByWarehouse": false
+    },
+    {
+      "code": "H00003423",
+      "name": "Мука Беляевская, высший сорт, 10 кг",
+      "bagWeightKg": 10,
+      "active": true,
+      "confirmedByWarehouse": false
+    }
+  ]
+}
