@@ -424,6 +424,7 @@ class InvoiceEditor extends StatefulWidget {
   State<InvoiceEditor> createState()=>_InvoiceEditorState();
 }
 class _InvoiceEditorState extends State<InvoiceEditor> {
+  bool verified=false;
   late final TextEditingController numberController;
   late final List<Item> items;
   @override
@@ -439,6 +440,11 @@ class _InvoiceEditorState extends State<InvoiceEditor> {
   void dispose(){numberController.dispose();super.dispose();}
   void addRow()=>setState(()=>items.add(Item('',0)));
   Future<void> save() async {
+    if(!verified){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content:Text('Сначала сверь все строки с бумажной накладной')));
+      return;
+    }
     final number=numberController.text.trim();
     if(items.isEmpty){
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Добавь хотя бы одну позицию')));
@@ -504,6 +510,15 @@ class _InvoiceEditorState extends State<InvoiceEditor> {
         for(var i=0;i<items.length;i++)itemCard(items[i],i,options,catalog),
         OutlinedButton.icon(onPressed:addRow,icon:const Icon(Icons.add),
           label:const Text('Добавить позицию')),
+        const SizedBox(height:10),
+        Card(color:const Color(0xFFFFF5E2),child:CheckboxListTile(
+          controlAffinity:ListTileControlAffinity.leading,
+          title:const Text('Я проверил все строки по бумажной накладной',
+            style:TextStyle(fontWeight:FontWeight.bold,fontSize:13)),
+          subtitle:const Text('OCR может пропустить целую строку, даже если остальные цифры верные.',
+            style:TextStyle(fontSize:11)),
+          value:verified,onChanged:(v)=>setState(()=>verified=v??false),
+        )),
         const SizedBox(height:20),
       ]),
     );
