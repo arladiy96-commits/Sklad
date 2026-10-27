@@ -1,0 +1,44 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Prepare Android project
+        run: |
+          flutter create --platforms=android --project-name sklad --org kz.sklad .
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/build.gradle.kts")
+          if p.exists():
+              text=p.read_text().replace("minSdk = flutter.minSdkVersion","minSdk = 24")
+              p.write_text(text)
+          else:
+              p=Path("android/app/build.gradle")
+              text=p.read_text().replace("minSdkVersion flutter.minSdkVersion","minSdkVersion 24")
+              p.write_text(text)
+          PY
+      - run: flutter pub get
+      - run: dart format lib test
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sklad-Android-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
