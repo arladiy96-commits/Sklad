@@ -29,16 +29,10 @@ jobs:
               marker = 'signingConfig = signingConfigs.getByName("debug")'
               if marker not in text:
                   raise RuntimeError("Could not find release signing block")
-              text = text.replace(marker, marker + '\n            proguardFiles("proguard-rules.pro")')
+              text = text.replace(marker, marker + '\n            isMinifyEnabled = false\n            isShrinkResources = false')
               p.write_text(text)
           else:
               raise RuntimeError("Expected Flutter Kotlin Gradle project")
-          Path("android/app/proguard-rules.pro").write_text("\n".join([
-              "-dontwarn com.google.mlkit.vision.text.chinese.**",
-              "-dontwarn com.google.mlkit.vision.text.devanagari.**",
-              "-dontwarn com.google.mlkit.vision.text.japanese.**",
-              "-dontwarn com.google.mlkit.vision.text.korean.**"
-          ]) + "\n")
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           manifest.write_text(manifest.read_text().replace('android:label="sklad"', 'android:label="Склад"'))
           PY
@@ -49,6 +43,8 @@ jobs:
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
       - run: flutter build apk --release
+      - name: Verify that APK exists
+        run: test -s build/app/outputs/flutter-apk/app-release.apk
       - uses: actions/upload-artifact@v4
         with:
           name: Sklad-Android-APK
