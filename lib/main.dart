@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -115,7 +116,7 @@ class _WarehouseHomeState extends State<WarehouseHome> {
     final boundary=reportKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if(boundary==null)throw StateError('Открой вкладку «Ведомость»');
     final image=await boundary.toImage(pixelRatio:3);
-    final bytes=await image.toByteData(format:ImageByteFormat.png);
+    final bytes=await image.toByteData(format:ui.ImageByteFormat.png);
     image.dispose();
     if(bytes==null)throw StateError('Не удалось сделать изображение ведомости');
     final doc=pw.Document();
@@ -412,13 +413,12 @@ class _InvoiceEditorState extends State<InvoiceEditor> {
     }
     final id=widget.previous?.id??DateTime.now().microsecondsSinceEpoch.toString();
     final invoice=Invoice(id,
-      number.isEmpty?'Без номера '+id.substring(mathMin(0,id.length-5)):number,
+      number.isEmpty?'Без номера '+id.substring(id.length-5):number,
       widget.previous?.imagePath??widget.imagePath,
       widget.previous?.createdAt??DateTime.now().toIso8601String(),
       items);
     Navigator.pop(context,invoice);
   }
-  int mathMin(int a,int b)=>a<b?a:b;
 
   @override
   Widget build(BuildContext context) {
