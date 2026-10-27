@@ -134,6 +134,47 @@ class ScanData {
   final List<Item> items;
   ScanData(this.number,this.items);
 }
+/// Only a complete standalone number from the Quantity column is accepted.
+/// H00001955 must NEVER be parsed as 1955 kilograms.
+double? parseQuantityToken(String input) {
+  final cleaned=input.trim().replaceAll(RegExp(r'\s+'),'')
+      .replaceAll(RegExp(r'[|:]'),'')
+      .replaceAll(RegExp(r'(кг|kg|kr)$',caseSensitive:false),'');
+  if(!RegExp(r'^\d{1,5}(?:[.,]\d{1,2})?$').hasMatch(cleaned))return null;
+  final result=double.tryParse(cleaned.replaceAll(',','.'));
+  return result==null||result<=0?null:result;
+}
+class QuantityToken {
+  final String text;
+  final double x,y;
+  const QuantityToken(this.text,this.x,this.y);
+}
+
+/// Never align by loose OCR text lines. Only use numbers physically located
+/// in the quantity column, and only when we have exactly one per product row.
+List<double>? matchQuantities(List<double> rowYs,List<QuantityToken> tokens,
+    double left,double right,double top,double bottom) {
+  if(rowYs.isEmpty)return null;
+  final values=tokens.where((t)=>t.x>=left&&t.x<right&&
+      t.y>=top&&t.y<=bottom&&parseQuantityToken(t.text)!=null).toList()
+    ..sort((a,b)=>a.y.compareTo(b.y));
+  if(values.length!=rowYs.length)return null;
+  for(var i=1;i<values.length;i++){
+    if((values[i].y-values[i-1].y).abs()<3)return null;
+  }
+  if(rowYs.length>1){
+    final leftSpan=rowYs.last-rowYs.first;
+    final rightSpan=values.last.y-values.first.y;
+    final gap=leftSpan/(rowYs.length-1);
+    if(gap<=0||(leftSpan-rightSpan).abs()>math.max(18.0,gap*0.8))return null;
+  }
+  return values.map((v)=>parseQuantityToken(v.text)!).toList();
+}
+class _CodeAnchor {
+  final String code;
+  final double y,height;
+  const _CodeAnchor(this.code,this.y,this.height);
+}
 class Scanner {
   final recognizer=TextRecognizer(script:TextRecognitionScript.latin);
   Future<ScanData> scan(String path,Set<String> known) async {
@@ -142,71 +183,108 @@ class Scanner {
     final original=img.bakeOrientation(decoded);
     final dir=await getTemporaryDirectory();
     ScanData best=ScanData('',[]);
-    int score(ScanData d)=>d.items.length*10+
-      d.items.where((e)=>known.contains(e.code)&&e.kg>0).length*25;
+    int score(ScanData s)=>s.items.length*10+
+      s.items.where((i)=>known.contains(i.code)).length*25+
+      s.items.where((i)=>i.kg>0).length*8;
     try{
-      for(final angle in [0,90,270,180]) {
-        final rotated=angle==0?original:img.copyRotate(original,angle:angle);
-        final tmp=File(dir.path+'/ocr_'+angle.toString()+'.jpg');
-        await tmp.writeAsBytes(img.encodeJpg(rotated,quality:86));
+      for(final angle in [0,90,270,180]){
+        final photo=angle==0?original:img.copyRotate(original,angle:angle);
+        final file=File(dir.path+'/sklad_full_'+angle.toString()+'.jpg');
+        await file.writeAsBytes(img.encodeJpg(photo,quality:90));
         try{
-          final text=await recognizer.processImage(InputImage.fromFilePath(tmp.path));
-          final result=_extract(text);
+          final full=await recognizer.processImage(InputImage.fromFilePath(file.path));
+          final anchors=_readCodes(full);
+          if(anchors.isEmpty)continue;
+          final rows=await _readQuantityColumn(photo,full,anchors,known,dir);
+          final number=RegExp(r'ТДБ[0-9]{7,11}').firstMatch(
+              full.text.toUpperCase().replaceAll(RegExp(r'\s+'),''))?.group(0)??'';
+          final result=ScanData(number,rows);
           if(score(result)>score(best))best=result;
-          if(result.items.isNotEmpty &&
-            result.items.every((e)=>known.contains(e.code)&&e.kg>0))break;
-        }finally{if(await tmp.exists())await tmp.delete();}
+          if(anchors.length>=2 && anchors.every((a)=>known.contains(a.code)))break;
+        }finally{if(await file.exists())await file.delete();}
       }
     }finally{await recognizer.close();}
     return best;
   }
-
-  ScanData _extract(RecognizedText text) {
-    final lines=text.blocks.expand((b)=>b.lines).toList();
-    final elements=lines.expand((l)=>l.elements).toList();
-    final raw=text.text.toUpperCase().replaceAll(' ','');
-    final number=RegExp(r'ТДБ[0-9]{7,11}').firstMatch(raw)?.group(0)??'';
-    if(elements.isEmpty)return ScanData(number,[]);
-    final edge=elements.fold<double>(1,(v,e)=>math.max(v,e.boundingBox.right.toDouble()));
-    double headerX(String key,double fraction) {
-      // Use the word's own rectangle; a TextLine can cover the whole header row.
-      for(final e in elements) {
-        if(e.text.toLowerCase().contains(key))return e.boundingBox.left.toDouble()-10;
+  List<_CodeAnchor> _readCodes(RecognizedText text){
+    final anchors=<_CodeAnchor>[];
+    for(final block in text.blocks){
+      for(final line in block.lines){
+        var foundInTokens=false;
+        for(final e in line.elements){
+          final match=RegExp(r'H[0-9]{8}').firstMatch(codeOf(e.text));
+          if(match!=null){
+            anchors.add(_CodeAnchor(match.group(0)!,
+              e.boundingBox.center.dy,e.boundingBox.height.toDouble()));
+            foundInTokens=true;
+          }
+        }
+        if(!foundInTokens){
+          final match=RegExp(r'H[0-9]{8}').firstMatch(codeOf(line.text));
+          if(match!=null)anchors.add(_CodeAnchor(match.group(0)!,
+            line.boundingBox.center.dy,line.boundingBox.height.toDouble()));
+        }
       }
-      return edge*fraction;
     }
-    final qX=headerX('количество',.70);
-    final pX=headerX('цена',.81);
-    final sX=headerX('сумма',.90);
-    final anchors=<(TextLine,String)>[];
-    for(final l in lines){
-      final code=RegExp(r'H[0-9]{8}').firstMatch(codeOf(l.text))?.group(0);
-      if(code!=null)anchors.add((l,code));
+    anchors.sort((a,b)=>a.y.compareTo(b.y));
+    final distinct=<_CodeAnchor>[];
+    for(final a in anchors){
+      if(distinct.any((b)=>(b.y-a.y).abs()<math.max(5.0,a.height*0.4)))continue;
+      distinct.add(a);
     }
-    anchors.sort((a,b)=>a.$1.boundingBox.center.dy.compareTo(b.$1.boundingBox.center.dy));
-    final items=<Item>[];
-    for(var i=0;i<anchors.length;i++){
-      final line=anchors[i].$1;
-      final y=line.boundingBox.center.dy;
-      final tolerance=math.max(12.0,line.boundingBox.height*1.1);
-      final before=i==0?double.negativeInfinity:
-        (anchors[i-1].$1.boundingBox.center.dy+y)/2;
-      final after=i==anchors.length-1?double.infinity:
-        (anchors[i+1].$1.boundingBox.center.dy+y)/2;
-      final row=elements.where((e){
-        final cy=e.boundingBox.center.dy;
-        return cy>before&&cy<after&&(cy-y).abs()<=tolerance;
-      }).toList()..sort((a,b)=>a.boundingBox.left.compareTo(b.boundingBox.left));
-      double? col(double from,double to){
-        if(to<=from)return null;
-        final value=row.where((e)=>e.boundingBox.center.dx>=from &&
-          e.boundingBox.center.dx<to).map((e)=>e.text).join(' ');
-        return numeric(value);
+    return distinct;
+  }
+  List<QuantityToken> _tokens(RecognizedText text,
+      {double ox=0,double oy=0,double scale=1}) => [
+    for(final b in text.blocks)
+      for(final l in b.lines)
+        for(final e in l.elements)
+          QuantityToken(e.text,ox+e.boundingBox.center.dx/scale,
+            oy+e.boundingBox.center.dy/scale)
+  ];
+  Future<List<Item>> _readQuantityColumn(img.Image photo,RecognizedText full,
+      List<_CodeAnchor> anchors,Set<String> known,Directory dir) async {
+    final ys=anchors.map((a)=>a.y).toList();
+    final gap=ys.length>1?(ys.last-ys.first)/(ys.length-1):
+      math.max(20.0,anchors.first.height*1.8);
+    final padding=math.max(20.0,gap*1.7);
+    // Fixed-format company invoices: Quantity around 69%-81% of page width.
+    // This band deliberately excludes the SKU column and the Price column.
+    final left=photo.width*0.685;
+    final right=photo.width*0.818;
+    final top=math.max(0.0,ys.first-padding);
+    final bottom=math.min(photo.height.toDouble(),ys.last+2*padding);
+    final base=matchQuantities(ys,_tokens(full),left,right,top,bottom);
+    final x0=left.floor().clamp(0,photo.width-1);
+    final x1=right.ceil().clamp(x0+1,photo.width);
+    final y0=top.floor().clamp(0,photo.height-1);
+    final y1=bottom.ceil().clamp(y0+1,photo.height);
+    final cropped=img.copyCrop(photo,x:x0,y:y0,width:x1-x0,height:y1-y0);
+    final large=img.copyResize(cropped,width:cropped.width*3,
+      interpolation:img.Interpolation.cubic);
+    final temp=File(dir.path+'/sklad_quantities.jpg');
+    await temp.writeAsBytes(img.encodeJpg(large,quality:95));
+    List<double>? enhanced;
+    try{
+      final croppedText=await recognizer.processImage(
+        InputImage.fromFilePath(temp.path));
+      enhanced=matchQuantities(ys,_tokens(croppedText,
+        ox:x0.toDouble(),oy:y0.toDouble(),scale:3),
+        left,right,top,bottom);
+    }finally{if(await temp.exists())await temp.delete();}
+    // Conflicting reads indicate uncertainty: fail closed.
+    var amounts=enhanced??base;
+    if(enhanced!=null && base!=null){
+      for(var i=0;i<base.length;i++){
+        if((base[i]-enhanced[i]).abs()>0.001){amounts=null;break;}
       }
-      items.add(Item(anchors[i].$2,col(qX,pX)??0,
-        price:col(pX,sX),amount:col(sX,edge+10),
-        raw:row.map((e)=>e.text).join(' ')));
     }
-    return ScanData(number,items);
+    return [
+      for(var i=0;i<anchors.length;i++)
+        Item(anchors[i].code,
+          known.contains(anchors[i].code) && amounts!=null ? amounts[i] : 0,
+          raw:amounts==null?'Код найден; количество не прочитано, введи вручную':
+            'Количество прочитано из отдельной колонки; проверь по фото'),
+    ];
   }
 }
