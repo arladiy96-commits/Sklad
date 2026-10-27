@@ -169,8 +169,9 @@ class Scanner {
     if(elements.isEmpty)return ScanData(number,[]);
     final edge=elements.fold<double>(1,(v,e)=>math.max(v,e.boundingBox.right.toDouble()));
     double headerX(String key,double fraction) {
-      for(final l in lines) {
-        if(l.text.toLowerCase().contains(key))return l.boundingBox.left.toDouble()-10;
+      // Use the word's own rectangle; a TextLine can cover the whole header row.
+      for(final e in elements) {
+        if(e.text.toLowerCase().contains(key))return e.boundingBox.left.toDouble()-10;
       }
       return edge*fraction;
     }
