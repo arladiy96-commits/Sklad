@@ -111,6 +111,31 @@ class _WarehouseHomeState extends State<WarehouseHome> {
     await refresh();
   }
 
+  Future<void> finishBatch() async {
+    if(store.invoices.isEmpty)return;
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
+      title:const Text('Закончить текущую сборку?'),
+      content:const Text('Накладные сохранятся в истории, а новая сборка начнётся с нуля.'),
+      actions:[
+        TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Отмена')),
+        FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Завершить')),
+      ]));
+    if(ok!=true)return;
+    store.finishBatch();
+    await refresh();
+    message('Сборка сохранена в истории');
+  }
+
+  Future<void> restoreBatch(int index) async {
+    if(store.invoices.isNotEmpty){
+      message('Сначала заверши текущую сборку');return;
+    }
+    final old=store.history.removeAt(index);
+    store.invoices=store.batchInvoices(old);
+    await refresh();
+    message('Сборка восстановлена для редактирования');
+  }
+
   Future<Uint8List> renderPdf() async {
     await WidgetsBinding.instance.endOfFrame;
     final boundary=reportKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
@@ -201,6 +226,9 @@ class _WarehouseHomeState extends State<WarehouseHome> {
           onPressed:loading?null:()=>edit(null),
           icon:const Icon(Icons.edit_note),label:const Text('Вручную'))),
       ]),
+      if(store.invoices.isNotEmpty)
+        TextButton.icon(onPressed:finishBatch,icon:const Icon(Icons.archive_outlined),
+          label:const Text('Завершить сборку и начать новую')),
       const SizedBox(height:26),
       const Text('Добавленные накладные',style:TextStyle(
         fontSize:19,fontWeight:FontWeight.bold,color:navy)),
@@ -219,6 +247,24 @@ class _WarehouseHomeState extends State<WarehouseHome> {
           trailing:IconButton(icon:const Icon(Icons.delete_outline),
             tooltip:'Удалить',onPressed:()=>removeInvoice(invoice)),
         )),
+      if(store.history.isNotEmpty)...[
+        const SizedBox(height:18),
+        const Text('История сборок',style:TextStyle(
+          fontSize:19,fontWeight:FontWeight.bold,color:navy)),
+        const SizedBox(height:8),
+        for(var i=0;i<store.history.length;i++)
+          Card(child:ExpansionTile(
+            title:Text('Сборка '+(store.history[i]['finishedAt'] as String).substring(0,16).replaceAll('T',' ')),
+            subtitle:Text(store.batchInvoices(store.history[i]).length.toString()+' накладных'),
+            children:[
+              for(final p in summary(store.batchInvoices(store.history[i]),store.products))
+                ListTile(dense:true,title:Text(p.product.name),
+                  trailing:Text(p.total.toString()+' шт.')),
+              TextButton.icon(onPressed:()=>restoreBatch(i),
+                icon:const Icon(Icons.restore),label:const Text('Вернуть на редактирование')),
+            ],
+          )),
+      ],
       const SizedBox(height:20),
     ]);
   }
