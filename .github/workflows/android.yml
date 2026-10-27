@@ -25,18 +25,22 @@ jobs:
           from pathlib import Path
           p = Path("android/app/build.gradle.kts")
           if p.exists():
-              text=p.read_text().replace("minSdk = flutter.minSdkVersion","minSdk = 24")
+              text = p.read_text().replace("minSdk = flutter.minSdkVersion", "minSdk = 24")
+              marker = 'signingConfig = signingConfigs.getByName("debug")'
+              if marker not in text:
+                  raise RuntimeError("Could not find release signing block")
+              text = text.replace(marker, marker + '\n            proguardFiles("proguard-rules.pro")')
               p.write_text(text)
           else:
-              p=Path("android/app/build.gradle")
-              text=p.read_text().replace("minSdkVersion flutter.minSdkVersion","minSdkVersion 24")
-              p.write_text(text)
-          Path("android/app/proguard-rules.pro").write_text(
-              "-dontwarn com.google.mlkit.vision.text.chinese.**\\n"
-              "-dontwarn com.google.mlkit.vision.text.devanagari.**\\n"
-              "-dontwarn com.google.mlkit.vision.text.japanese.**\\n"
-              "-dontwarn com.google.mlkit.vision.text.korean.**\\n"
-          )
+              raise RuntimeError("Expected Flutter Kotlin Gradle project")
+          Path("android/app/proguard-rules.pro").write_text("\n".join([
+              "-dontwarn com.google.mlkit.vision.text.chinese.**",
+              "-dontwarn com.google.mlkit.vision.text.devanagari.**",
+              "-dontwarn com.google.mlkit.vision.text.japanese.**",
+              "-dontwarn com.google.mlkit.vision.text.korean.**"
+          ]) + "\n")
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          manifest.write_text(manifest.read_text().replace('android:label="sklad"', 'android:label="Склад"'))
           PY
       - name: Remove generated template test
         run: rm -f test/widget_test.dart
