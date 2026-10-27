@@ -32,6 +32,8 @@ jobs:
               text=p.read_text().replace("minSdkVersion flutter.minSdkVersion","minSdkVersion 24")
               p.write_text(text)
           PY
+      - name: Remove generated template test
+        run: rm -f test/widget_test.dart
       - run: flutter pub get
       - run: dart format lib test
       - run: flutter analyze --no-fatal-infos
