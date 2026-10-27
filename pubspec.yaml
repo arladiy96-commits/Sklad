@@ -1,0 +1,28 @@
+name: sklad
+description: Offline warehouse picking from invoices
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_mlkit_text_recognition: ^0.16.0
+  image_picker: ^1.2.2
+  shared_preferences: ^2.5.3
+  path_provider: ^2.1.5
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  image: ^4.5.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/catalog/products.json
