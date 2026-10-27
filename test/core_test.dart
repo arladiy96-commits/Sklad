@@ -29,4 +29,39 @@ void main() {
     expect(lines.firstWhere((e)=>e.product.code==p25.code).total,12);
     expect(lines.firstWhere((e)=>e.product.code==p10.code).total,10);
   });
+  test('OCR never treats the product SKU as kilograms', () {
+    expect(parseQuantityToken('H00001950'),isNull);
+    expect(parseQuantityToken('H00001955'),isNull);
+    expect(parseQuantityToken('H00001952'),isNull);
+    expect(parseQuantityToken('250 кг'),250);
+    expect(parseQuantityToken('100'),100);
+    expect(parseQuantityToken('171,00'),171);
+  });
+
+  test('Quantity column ignores codes and sums outside its X boundaries', () {
+    const tokens=[
+      QuantityToken('H00001950',80,100),
+      QuantityToken('H00001955',80,120),
+      QuantityToken('H00001952',80,140),
+      QuantityToken('250 кг',1095,119),
+      QuantityToken('250 кг',1095,139),
+      QuantityToken('100 кг',1095,159),
+      QuantityToken('171',1250,119),
+      QuantityToken('46000',1360,139),
+    ];
+    expect(matchQuantities([100,120,140],tokens,1030,1190,80,180),
+      [250,250,100]);
+  });
+
+  test('Unclear row count yields blank quantities rather than guessing', () {
+    const tokens=[
+      QuantityToken('250',1100,120),
+      QuantityToken('100',1100,160),
+    ];
+    expect(matchQuantities([100,120,140],tokens,1030,1190,80,180),isNull);
+    expect(matchQuantities([100],[
+      QuantityToken('H00001955',1100,100)
+    ],1030,1190,80,180),isNull);
+  });
+
 }
