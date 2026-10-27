@@ -31,6 +31,12 @@ jobs:
               p=Path("android/app/build.gradle")
               text=p.read_text().replace("minSdkVersion flutter.minSdkVersion","minSdkVersion 24")
               p.write_text(text)
+          Path("android/app/proguard-rules.pro").write_text(
+              "-dontwarn com.google.mlkit.vision.text.chinese.**\\n"
+              "-dontwarn com.google.mlkit.vision.text.devanagari.**\\n"
+              "-dontwarn com.google.mlkit.vision.text.japanese.**\\n"
+              "-dontwarn com.google.mlkit.vision.text.korean.**\\n"
+          )
           PY
       - name: Remove generated template test
         run: rm -f test/widget_test.dart
