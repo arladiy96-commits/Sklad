@@ -515,6 +515,6 @@ class _InvoiceEditorState extends State<InvoiceEditor> {
           child:Text('OCR: '+item.raw,style:const TextStyle(fontSize:10,
             color:Colors.black45))),
       ]),
-    )));
+    ));
   }
 }
