@@ -255,8 +255,30 @@ class Scanner {
     final top=math.max(0.0,ys.first-padding);
     final bottom=math.min(photo.height.toDouble(),ys.last+2*padding);
     final base=matchQuantities(ys,_tokens(full),left,right,top,bottom);
-    final x0=left.floor().clamp(0,photo.width-1);
-    final x1=right.ceil().clamp(x0+1,photo.width);
+    // Reconstruct the printed table width from the code cells and right-most
+    // text, rather than assuming that every photo crops the page identically.
+    var codeLeft=photo.width.toDouble();
+    var pageRight=0.0;
+    for(final block in full.blocks){
+      for(final line in block.lines){
+        for(final element in line.elements){
+          pageRight=math.max(pageRight,element.boundingBox.right.toDouble());
+          if(RegExp(r'H[0-9]{8}').hasMatch(codeOf(element.text))){
+            codeLeft=math.min(codeLeft,element.boundingBox.left.toDouble());
+          }
+        }
+      }
+    }
+    if(codeLeft==photo.width.toDouble())codeLeft=photo.width*0.08;
+    if(pageRight<photo.width*0.7)pageRight=photo.width.toDouble();
+    final tableLeft=math.max(0.0,codeLeft-35);
+    final tableRight=math.min(photo.width.toDouble(),pageRight+12);
+    final span=tableRight-tableLeft;
+    // Keep only printed numbers, not the «кг» suffix or vertical grid.
+    final digitLeft=tableLeft+span*0.728;
+    final digitRight=tableLeft+span*0.794;
+    final x0=digitLeft.floor().clamp(0,photo.width-1);
+    final x1=digitRight.ceil().clamp(x0+1,photo.width);
     final y0=top.floor().clamp(0,photo.height-1);
     final y1=bottom.ceil().clamp(y0+1,photo.height);
     final cropped=img.copyCrop(photo,x:x0,y:y0,width:x1-x0,height:y1-y0);
@@ -270,7 +292,7 @@ class Scanner {
         InputImage.fromFilePath(temp.path));
       enhanced=matchQuantities(ys,_tokens(croppedText,
         ox:x0.toDouble(),oy:y0.toDouble(),scale:3),
-        left,right,top,bottom);
+        digitLeft,digitRight,top,bottom);
     }finally{if(await temp.exists())await temp.delete();}
     // Conflicting reads indicate uncertainty: fail closed.
     var amounts=enhanced??base;
