@@ -126,7 +126,9 @@ class StockLedger {
     final title=name.trim();
     if(title.isEmpty||title.length>150||unit.trim().isEmpty)throw const FormatException('Укажи название и единицу измерения');
     if(scannedCode!=null&&scannedCode.trim().isNotEmpty)_validCode(scannedCode);
-    final id=_id('SK');
+    var id=_id('SK');
+    // A scanned factory barcode may accidentally equal a future internal ID.
+    while(byCode(id)!=null){id=_id('SK');}
     final codes=[id];
     if(scannedCode!=null&&scannedCode.trim().isNotEmpty&&cleanScan(scannedCode)!=id){
       codes.add(cleanScan(scannedCode));
