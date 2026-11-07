@@ -232,7 +232,7 @@ export function importBackup(json){
 export function csv(rows){
   return '\uFEFF'+rows.map(r=>r.map(v=>{
     let s=String(v??'');
-    if(/^[\s]*[=+\-@]/.test(s))s="'"+s; // Avoid spreadsheet formula injection.
+    if(typeof v!=='number' && /^[\s]*[=+\-@]/.test(s))s="'"+s; // Preserve numeric negative quantities.
     return '"'+s.replaceAll('"','""')+'"';
   }).join(';')).join('\r\n');
 }
