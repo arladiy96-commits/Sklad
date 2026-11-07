@@ -1,0 +1,23 @@
+{
+  "name": "sklad-windows-pwa",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "predev": "node scripts/prepare-ocr.mjs",
+    "build": "vite build",
+    "prebuild": "node scripts/prepare-ocr.mjs",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "jsbarcode": "^3.12.1",
+    "qrcode": "^1.5.4",
+    "tesseract.js": "^6.0.1"
+  },
+  "devDependencies": {
+    "vite": "^7.2.0",
+    "vite-plugin-pwa": "^1.1.0"
+  }
+}
