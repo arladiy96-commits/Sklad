@@ -44,6 +44,8 @@ jobs:
         run: |
           test -s desktop/dist/index.html
           test -s desktop/dist/manifest.webmanifest
+          test -s desktop/dist/icon-192.png
+          test -s desktop/dist/icon-512.png
           test -s desktop/dist/sw.js
           test -s desktop/dist/ocr/eng.traineddata.gz
           test -s desktop/dist/ocr/rus.traineddata.gz
