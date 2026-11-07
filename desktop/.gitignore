@@ -2,3 +2,5 @@ node_modules/
 dist/
 public/ocr/
 .DS_Store
+public/icon-192.png
+public/icon-512.png
