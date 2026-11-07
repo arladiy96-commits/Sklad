@@ -3,8 +3,10 @@ name: Android APK
 on:
   push:
     branches: [main]
+    paths: ['lib/**', 'assets/**', 'pubspec.yaml', 'test/**', '.github/workflows/android.yml']
   pull_request:
     branches: [main]
+    paths: ['lib/**', 'assets/**', 'pubspec.yaml', 'test/**', '.github/workflows/android.yml']
   workflow_dispatch:
 
 permissions:
