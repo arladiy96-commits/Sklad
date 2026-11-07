@@ -9,6 +9,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'core.dart';
+import 'inventory_page.dart';
 
 const navy=Color(0xFF192C39);
 const amber=Color(0xFFE8A12A);
@@ -183,6 +184,7 @@ class _WarehouseHomeState extends State<WarehouseHome> {
         homePage(totalLines),
         reportPage(totalLines),
         catalogPage(),
+        InventoryPage(invoiceProducts:store.products),
       ]),
       bottomNavigationBar:NavigationBar(selectedIndex:tab,
         onDestinationSelected:(i)=>setState(()=>tab=i),
@@ -193,6 +195,8 @@ class _WarehouseHomeState extends State<WarehouseHome> {
             selectedIcon:Icon(Icons.assignment),label:'Ведомость'),
           NavigationDestination(icon:Icon(Icons.inventory_2_outlined),
             selectedIcon:Icon(Icons.inventory_2),label:'Товары'),
+          NavigationDestination(icon:Icon(Icons.qr_code_scanner),
+            selectedIcon:Icon(Icons.fact_check),label:'Инвентаризация'),
         ]),
     );
   }
