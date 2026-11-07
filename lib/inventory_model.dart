@@ -85,7 +85,7 @@ class StockLedger {
     'counts':counts.map((e)=>e.toJson()).toList()};
   String encode()=>const JsonEncoder.withIndent('  ').convert(toJson());
   static Future<File> storageFile() async =>
-      File('\${(await getApplicationDocumentsDirectory()).path}/$fileName');
+      File('${(await getApplicationDocumentsDirectory()).path}/$fileName');
   static Future<StockLedger> open() async{
     final file=await storageFile();
     if(!await file.exists())return StockLedger();
@@ -93,12 +93,12 @@ class StockLedger {
   }
   Future<void> save() async{
     verify();
-    final file=await storageFile(),tmp=File('\${file.path}.tmp');
+    final file=await storageFile(),tmp=File('${file.path}.tmp');
     await tmp.writeAsString(encode(),flush:true);
     await tmp.rename(file.path);
   }
 
-  String _id(String prefix)=>'$prefix-\${(++sequence).toString().padLeft(6,'0')}';
+  String _id(String prefix)=>'$prefix-${(++sequence).toString().padLeft(6,'0')}';
   String get _now=>DateTime.now().toIso8601String();
   StockProduct? byId(String id) {
     for(final p in products){if(p.id==id)return p;}return null;
@@ -119,7 +119,7 @@ class StockLedger {
       throw const FormatException('Пустой или слишком длинный код');
     }
     final p=byCode(c);
-    if(p!=null&&p.id!=owner)throw StateError('Код уже привязан к товару: \${p.name}');
+    if(p!=null&&p.id!=owner)throw StateError('Код уже привязан к товару: ${p.name}');
   }
   StockProduct addProduct({required String name,required String unit,
     String location='',String category='',String? scannedCode}){
@@ -189,7 +189,7 @@ class StockLedger {
       final difference=roundStock(row.value-balance(row.key));
       if(apply&&difference!=0){
         movements.add(StockMove(_id('MV'),row.key,'inventory',_now,difference,
-          'Корректировка инвентаризации \${c.id}'));
+          'Корректировка инвентаризации ${c.id}'));
       }
     }
     c.closedAt=_now;
