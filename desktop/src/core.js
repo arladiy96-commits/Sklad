@@ -70,10 +70,11 @@ export function parseOcrText(raw) {
   const items=[];
   // Never treat the digits of H00001955 as a quantity. OCR is only a draft.
   for(const line of text.split(/\r?\n/)){
-    const code=codeOf(line).match(/H\d{8}/)?.[0];
-    if(!code)continue;
-    const idx=codeOf(line).indexOf(code);
-    const suffix=codeOf(line).slice(idx+code.length);
+    const normalized=line.toUpperCase().replace(/Н/g,'H').replace(/О/g,'0');
+    const match=normalized.match(/H\d{8}/);
+    if(!match)continue;
+    const code=match[0];
+    const suffix=normalized.slice(match.index+code.length);
     const possible=suffix.split(/[|;\t ]+/).map(v=>v.replace(/(кг|kg)$/i,'')).filter(Boolean);
     const kgCandidate=possible.find(v=>/^\d{1,5}(?:[.,]\d{1,2})?$/.test(v) && Number(v.replace(',','.'))>0);
     items.push({code,kg:kgCandidate?Number(kgCandidate.replace(',','.')):0,price:null,amount:null,raw:line});
