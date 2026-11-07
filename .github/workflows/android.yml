@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -54,3 +54,13 @@ jobs:
           name: Sklad-Android-APK
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
+      - name: Publish test APK in GitHub Releases
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk Sklad-Inventory-v0.2.0.apk
+          tag="v0.2.0-inventory"
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --target "$GITHUB_SHA" --title "Склад 0.2.0 · Инвентаризация" --notes "Тестовая Android-версия: QR, Code 128, сканирование заводских кодов, карточки товаров, движение остатков, пересчёт, CSV и резервные копии JSON."
+          gh release upload "$tag" Sklad-Inventory-v0.2.0.apk --clobber
+
