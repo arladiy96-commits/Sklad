@@ -63,12 +63,17 @@ function writeState(value,photo=null,deletePhotos=false){
     tx.onabort=()=>reject(tx.error||Error('Операция сохранения отменена'));
   });
 }
-async function change(callback,photo=null){
-  const candidate=structuredClone(state);
-  const result=callback(candidate);
-  verifyState(candidate);
-  await writeState(candidate,photo);
-  state=candidate;render();return result;
+let pendingMutation=Promise.resolve();
+function change(callback,photo=null){
+  const op=pendingMutation.then(async()=>{
+    const candidate=structuredClone(state);
+    const result=callback(candidate);
+    verifyState(candidate);
+    await writeState(candidate,photo);
+    state=candidate;render();return result;
+  });
+  pendingMutation=op.catch(()=>{});
+  return op;
 }
 function alertUser(message,fail=false){
   const root=$('#toast');
