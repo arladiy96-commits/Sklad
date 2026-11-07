@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "predev": "node scripts/prepare-ocr.mjs",
+    "predev": "node scripts/prepare-icons.mjs && node scripts/prepare-ocr.mjs",
     "build": "vite build",
-    "prebuild": "node scripts/prepare-ocr.mjs",
+    "prebuild": "node scripts/prepare-icons.mjs && node scripts/prepare-ocr.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test test/*.test.mjs"
   },
