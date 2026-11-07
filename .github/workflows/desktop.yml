@@ -70,6 +70,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Enable GitHub Pages if not configured
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/pages" >/dev/null 2>&1 || gh api -X POST "repos/$GITHUB_REPOSITORY/pages" -f build_type=workflow
       - name: Deploy Windows PWA to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
