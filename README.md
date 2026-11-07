@@ -2,6 +2,10 @@
 
 Офлайн-приложение для Android: фотографируем **одинаковые бумажные расходные накладные**, проверяем распознанные коды/веса и автоматически считаем, **сколько мешков каждого товара собрать**.
 
+## Windows · отдельная PWA
+
+Компьютерная версия с интерфейсом для Windows, накладными, ведомостями, офлайн-OCR, инвентаризацией и локальной базой находится в [desktop/](desktop/README.md). Android-приложение сохранено отдельно. Сборка и архив публикуются в [Windows PWA Actions](https://github.com/arladiy96-commits/Sklad/actions/workflows/desktop.yml). Для установки через Edge/Chrome нужно один раз включить GitHub Pages (источник: GitHub Actions) в настройках репозитория.
+
 ## Установка
 
 Готовый APK: [GitHub Actions — успешная сборка](https://github.com/arladiy96-commits/Sklad/actions/runs/40456938433). В разделе **Artifacts** скачай **Sklad-Android-APK**, распакуй ZIP и установи файл app-release.apk на Android.
