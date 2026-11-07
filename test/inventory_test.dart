@@ -73,7 +73,7 @@ void main(){
     final p=stock.addProduct(name:'Мука',unit:'меш.',
       scannedCode:'4600123456789');
     stock.move(p.id,10.5,receipt:true);
-    final count=stock.startCount();
+    stock.startCount();
     stock.setActual(p.id,10);
     stock.finishCount(apply:true);
     final restored=StockLedger.decode(stock.encode());
