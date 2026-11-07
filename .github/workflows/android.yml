@@ -3,6 +3,8 @@ name: Android APK
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -34,7 +36,9 @@ jobs:
           else:
               raise RuntimeError("Expected Flutter Kotlin Gradle project")
           manifest = Path("android/app/src/main/AndroidManifest.xml")
-          manifest.write_text(manifest.read_text().replace('android:label="sklad"', 'android:label="Склад"'))
+          source = manifest.read_text().replace('android:label="sklad"', 'android:label="Склад"')
+          source = source.replace('<application', '<uses-permission android:name="android.permission.CAMERA"/>\n    <application', 1)
+          manifest.write_text(source)
           PY
       - name: Remove generated template test
         run: rm -f test/widget_test.dart
