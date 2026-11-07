@@ -271,7 +271,7 @@ function invoiceEditor(){
     '<option value="'+esc(p.code)+'" '+(p.code===it.code?'selected':'')+'>'+esc(p.name)+' · '+esc(p.code)+'</option>').join('')+
     '</select></label>'+
     '<label class="field narrow">Кг<input data-field="kg" data-index="'+i+'" type="text" inputmode="decimal" value="'+esc(it.kg||'')+'"></label>'+
-    '<span class="rowbag">'+(itemError(it,state)?'—':fmt(it.kg/productByCode(state,it.code).bagWeightKg)+' меш.</span>'+
+    '<span class="rowbag">'+(itemError(it,state)?'—':fmt(it.kg/productByCode(state,it.code).bagWeightKg)+' меш.')+'</span>'+
     button('×','remove-row','btn icon-danger','data-index="'+i+'"')+'</div>'+
     '<div class="row secondary-fields"><label class="field">Цена за кг<input data-field="price" data-index="'+i+'" value="'+esc(it.price??'')+'"></label>'+
     '<label class="field">Сумма<input data-field="amount" data-index="'+i+'" value="'+esc(it.amount??'')+'"></label>'+
