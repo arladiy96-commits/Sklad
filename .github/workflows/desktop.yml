@@ -1,0 +1,73 @@
+name: Windows PWA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: windows-pwa-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+        working-directory: desktop
+      - name: Test warehouse rules
+        run: npm test
+        working-directory: desktop
+      - name: Build PWA and bundle offline OCR
+        run: npm run build
+        working-directory: desktop
+      - name: Verify offline package
+        run: |
+          test -s desktop/dist/index.html
+          test -s desktop/dist/manifest.webmanifest
+          test -s desktop/dist/sw.js
+          test -s desktop/dist/ocr/eng.traineddata.gz
+          test -s desktop/dist/ocr/rus.traineddata.gz
+          test -s desktop/dist/ocr/worker.min.js
+      - name: Upload downloadable Windows PWA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sklad-Windows-PWA
+          path: desktop/dist/
+          retention-days: 60
+      - name: Upload GitHub Pages bundle
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: desktop/dist/
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Windows PWA to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
